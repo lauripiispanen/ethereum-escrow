@@ -22,6 +22,26 @@ contract('Escrow', (accounts) => {
     const newBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
     assert.equal(newBalance, origBalance + value, "target account balance should have increased")
-
+  })
+  it("prevents double-committing", async () => {
+    const value = 200
+    const instance = await Escrow.deployed()
+    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value })
+    await instance.deposit.sendTransaction(accounts[2], { from: accounts[0], value })
+    await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+    assertThrowsAsync(async () => {
+        await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+    }, /revert/)
   })
 })
+
+async function assertThrowsAsync(fn, regExp) {
+  let f = () => {}
+  try {
+    await fn()
+  } catch(e) {
+    f = () => {throw e}
+  } finally {
+    assert.throws(f, regExp)
+  }
+}
