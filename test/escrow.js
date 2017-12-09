@@ -15,10 +15,10 @@ contract('Escrow', (accounts) => {
   it("allows commits", async () => {
     const value = 200
     const instance = await Escrow.deployed()
-    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value })
+    await instance.deposit(accounts[1], { from: accounts[0], value })
     const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
-    await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+    await instance.commit(accounts[1], value, { from: accounts[0] })
     const newBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
     assert.equal(newBalance, origBalance + value, "target account balance should have increased")
@@ -43,6 +43,34 @@ contract('Escrow', (accounts) => {
     await assertThrowsAsync(async () => {
       await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 0 })
     }, /revert/)
+  })
+  it("can be rollbacked by recipient", async () => {
+    const value = 10000
+    const gasPrice = 10
+    const instance = await Escrow.new()
+    const originalBalance = web3.eth.getBalance(accounts[0]).toNumber()
+    const { tx, receipt } = await instance.deposit(accounts[1], { from: accounts[0], value, gasPrice })
+    const gasCost = receipt.gasUsed * gasPrice
+
+    await instance.rollback(accounts[0], value, { from: accounts[1] })
+    const newBalance = web3.eth.getBalance(accounts[0]).toNumber()
+    assert.equal(newBalance, originalBalance - gasCost, "original account balance minus gas costs should be returned")
+  })
+  it("cannot be rollbacked twice", async () => {
+    const instance = await Escrow.new()
+    const value = 12345
+    await instance.deposit(accounts[1], { from: accounts[0], value })
+    await instance.deposit(accounts[2], { from: accounts[0], value })
+
+    await instance.rollback(accounts[0], value, { from: accounts[1] })
+    const balance = web3.eth.getBalance(accounts[0]).toNumber()
+
+    await assertThrowsAsync(async () => {
+      await instance.rollback(accounts[0], value, { from: accounts[1] })
+    }, /revert/)
+
+    assert.equal(balance, web3.eth.getBalance(accounts[0]).toNumber(), "account balance should be unchanged")
+
   })
 })
 

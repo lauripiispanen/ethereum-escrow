@@ -33,12 +33,21 @@ contract Escrow {
     return d.amount == _amount && d.sender == _sender && d.recipient == _recipient;
   }
 
-  function commit(address _recipient, uint _amount) public payable {
+  function commit(address _recipient, uint _amount) public {
     var id = keccak256(msg.sender, _recipient, _amount);
     if (deposits[id].amount <= 0) {
       revert();
     }
-    _recipient.transfer(_amount);
+    deposits[id].recipient.transfer(deposits[id].amount);
+    delete deposits[id];
+  }
+
+  function rollback(address _depositSender, uint _amount) public {
+    var id = keccak256(_depositSender, msg.sender, _amount);
+    if (deposits[id].amount <= 0) {
+      revert();
+    }
+    deposits[id].sender.transfer(deposits[id].amount);
     delete deposits[id];
   }
 
