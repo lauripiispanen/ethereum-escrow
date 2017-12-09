@@ -29,8 +29,19 @@ contract('Escrow', (accounts) => {
     await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value })
     await instance.deposit.sendTransaction(accounts[2], { from: accounts[0], value })
     await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
-    assertThrowsAsync(async () => {
+    await assertThrowsAsync(async () => {
         await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+    }, /revert/)
+  })
+  it("cannot deposit zero", async () => {
+    const instance = await Escrow.deployed()
+    /* TODO: Ethereum VM doesn't support this, but web3 doesn't fail
+    await assertThrowsAsync(async () => {
+      const s = await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: -100 })
+    }, /revert/)
+    */
+    await assertThrowsAsync(async () => {
+      await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 0 })
     }, /revert/)
   })
 })

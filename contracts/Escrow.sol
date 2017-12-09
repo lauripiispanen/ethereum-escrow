@@ -17,6 +17,9 @@ contract Escrow {
   }
 
   function deposit(address _recipient) public payable {
+    if (msg.value <= 0) {
+      revert();
+    }
     var id = keccak256(msg.sender, _recipient, msg.value);
     var d = deposits[id];
     d.recipient = _recipient;
