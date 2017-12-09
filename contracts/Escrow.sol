@@ -25,9 +25,13 @@ contract Escrow {
   }
 
   function hasDeposit(address _sender, address _recipient, uint _amount) public view returns (bool) {
-    var id = keccak256(msg.sender, _recipient, _amount);
+    var id = keccak256(_sender, _recipient, _amount);
     var d = deposits[id];
     return d.amount == _amount && d.sender == _sender && d.recipient == _recipient;
+  }
+
+  function commit(address _recipient, uint _amount) public payable {
+    _recipient.transfer(_amount);
   }
 
 }
