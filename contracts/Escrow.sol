@@ -9,15 +9,26 @@ contract Escrow {
   }
 
   address public owner;
+  bool halted;
 
   mapping (bytes32 => Deposit) deposits;
 
   function Escrow() public {
     owner = msg.sender;
+    halted = false;
+  }
+
+  function halt() public {
+    if (msg.sender != owner) {
+      revert();
+    }
+    halted = true;
   }
 
   function deposit(address _recipient) public payable {
-    if (msg.value <= 0) {
+    if (halted) {
+      revert();
+    } else if (msg.value <= 0) {
       revert();
     }
     var id = keccak256(msg.sender, _recipient, msg.value);

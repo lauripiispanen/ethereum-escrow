@@ -70,7 +70,19 @@ contract('Escrow', (accounts) => {
     }, /revert/)
 
     assert.equal(balance, web3.eth.getBalance(accounts[0]).toNumber(), "account balance should be unchanged")
-
+  })
+  it("can be halted", async () => {
+    const instance = await Escrow.new()
+    await instance.halt({ from: accounts[0] })
+    await assertThrowsAsync(async () => {
+      await instance.deposit(accounts[1], { from: accounts[0], value: 1000 })
+    }, /revert/)
+  })
+  it("can only be halted by owner", async () => {
+    const instance = await Escrow.new()
+    await assertThrowsAsync(async () => {
+      await instance.halt({ from: accounts[1] })
+    }, /revert/)
   })
 })
 
