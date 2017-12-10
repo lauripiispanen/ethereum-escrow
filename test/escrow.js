@@ -2,11 +2,11 @@ const Escrow = artifacts.require("Escrow")
 
 contract('Escrow', (accounts) => {
   it("gets deployed", async () => {
-    const instance = await Escrow.deployed()
+    const instance = await Escrow.new()
     assert.notEqual(instance, null, "Contract was null")
   })
   it("allows deposits", async () => {
-    const instance = await Escrow.deployed()
+    const instance = await Escrow.new()
     await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
 
     assert.ok(await instance.hasDeposit(accounts[0], accounts[1], 100), "deposit not found")
@@ -14,7 +14,7 @@ contract('Escrow', (accounts) => {
   })
   it("allows commits", async () => {
     const value = 200
-    const instance = await Escrow.deployed()
+    const instance = await Escrow.new()
     await instance.deposit(accounts[1], { from: accounts[0], value })
     const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
@@ -25,7 +25,7 @@ contract('Escrow', (accounts) => {
   })
   it("prevents double-committing", async () => {
     const value = 200
-    const instance = await Escrow.deployed()
+    const instance = await Escrow.new()
     await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value })
     await instance.deposit.sendTransaction(accounts[2], { from: accounts[0], value })
     await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
@@ -34,7 +34,7 @@ contract('Escrow', (accounts) => {
     }, /revert/)
   })
   it("cannot deposit zero", async () => {
-    const instance = await Escrow.deployed()
+    const instance = await Escrow.new()
     /* TODO: Ethereum VM doesn't support this, but web3 doesn't fail
     await assertThrowsAsync(async () => {
       const s = await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: -100 })
