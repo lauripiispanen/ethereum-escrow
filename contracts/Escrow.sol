@@ -19,18 +19,14 @@ contract Escrow {
   }
 
   function halt() public {
-    if (msg.sender != owner) {
-      revert();
-    }
+    require(msg.sender == owner);
     halted = true;
   }
 
   function deposit(address _recipient) public payable {
-    if (halted) {
-      revert();
-    } else if (msg.value <= 0) {
-      revert();
-    }
+    require(!halted);
+    require(msg.value > 0);
+
     var id = keccak256(msg.sender, _recipient, msg.value);
     var d = deposits[id];
     d.recipient = _recipient;
@@ -46,9 +42,8 @@ contract Escrow {
 
   function commit(address _recipient, uint _amount) public {
     var id = keccak256(msg.sender, _recipient, _amount);
-    if (deposits[id].amount <= 0) {
-      revert();
-    }
+    require(deposits[id].amount > 0);
+
     var recipient = deposits[id].recipient;
     var amount = deposits[id].amount;
     delete deposits[id];
@@ -60,9 +55,8 @@ contract Escrow {
 
   function rollback(address _depositSender, uint _amount) public {
     var id = keccak256(_depositSender, msg.sender, _amount);
-    if (deposits[id].amount <= 0) {
-      revert();
-    }
+    require(deposits[id].amount > 0);
+
     var recipient = deposits[id].sender;
     var amount = deposits[id].amount;
     delete deposits[id];
