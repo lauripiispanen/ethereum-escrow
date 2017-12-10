@@ -44,6 +44,14 @@ contract('Escrow', (accounts) => {
       await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 0 })
     }, /revert/)
   })
+  it("cannot deposit twice to prevent losing ether", async () => {
+    const instance = await Escrow.new()
+    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
+    await assertThrowsAsync(async () => {
+      await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
+    }, /revert/)
+  })
+
   it("can be rollbacked by recipient", async () => {
     const value = 10000
     const gasPrice = 10

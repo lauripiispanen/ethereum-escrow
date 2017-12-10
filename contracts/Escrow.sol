@@ -29,6 +29,8 @@ contract Escrow {
 
     var id = keccak256(msg.sender, _recipient, msg.value);
     var d = deposits[id];
+    require(d.amount == 0);
+
     d.recipient = _recipient;
     d.amount = msg.value;
     d.sender = msg.sender;
