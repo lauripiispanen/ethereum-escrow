@@ -43,6 +43,9 @@ contract('Escrow', (accounts) => {
     await assertThrowsAsync(async () => {
       await instance.commitAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
     }, /revert/)
+    await assertThrowsAsync(async () => {
+      await instance.rollbackAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
+    }, /revert/)
   })
   it("prevents double-committing", async () => {
     const value = 200
@@ -98,6 +101,18 @@ contract('Escrow', (accounts) => {
     }, /revert/)
 
     assert.equal(balance, web3.eth.getBalance(accounts[0]).toNumber(), "account balance should be unchanged")
+  })
+  it("can be rollbacked by mediator", async () => {
+    const value = 10000
+    const gasPrice = 10
+    const instance = await Escrow.new()
+    const originalBalance = web3.eth.getBalance(accounts[0]).toNumber()
+    const { tx, receipt } = await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value, gasPrice })
+    const gasCost = receipt.gasUsed * gasPrice
+
+    await instance.rollbackAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
+    const newBalance = web3.eth.getBalance(accounts[0]).toNumber()
+    assert.equal(newBalance, originalBalance - gasCost, "original account balance minus gas costs should be returned")
   })
   it("can be halted and unhalted", async () => {
     const instance = await Escrow.new()

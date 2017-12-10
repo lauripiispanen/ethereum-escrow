@@ -77,14 +77,24 @@ contract Escrow {
 
   function rollback(address _depositSender, uint _amount) public {
     var id = keccak256(_depositSender, msg.sender, _amount);
-    require(deposits[id].amount > 0);
+    performRollback(id);
+  }
 
-    var recipient = deposits[id].sender;
-    var amount = deposits[id].amount;
-    delete deposits[id];
+  function rollbackAsMediator(address _depositSender, address _depositRecipient, uint _amount) public {
+    var id = keccak256(_depositSender, _depositRecipient, _amount);
+    require(mediators[id] == msg.sender);
+    performRollback(id);
+  }
+
+  function performRollback(bytes32 _id) private {
+    require(deposits[_id].amount > 0);
+
+    var recipient = deposits[_id].sender;
+    var amount = deposits[_id].amount;
+    delete deposits[_id];
 
     // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
-    assert(deposits[id].amount == 0);
+    assert(deposits[_id].amount == 0);
     recipient.transfer(amount);
   }
 
