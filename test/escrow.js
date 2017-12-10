@@ -50,6 +50,12 @@ contract('Escrow', (accounts) => {
       await instance.rollbackAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
     }, /revert/)
   })
+  it("does not expose internal functions", async () => {
+    // this test is in place for future proofing
+    const instance = await Escrow.new()
+    assert.ok(typeof instance.performCommit === "undefined")
+    assert.ok(typeof instance.performRollback === "undefined")
+  })
   it("prevents double-committing", async () => {
     const value = 200
     const instance = await Escrow.new()
