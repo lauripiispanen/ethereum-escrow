@@ -16,6 +16,8 @@ contract('Escrow', (accounts) => {
     const value = 200
     const instance = await Escrow.new()
     await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value })
+    assert.equal(accounts[3], await instance.getMediator(accounts[0], accounts[1], value))
+
     const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
     await instance.commit(accounts[1], value, { from: accounts[0] })
@@ -33,6 +35,7 @@ contract('Escrow', (accounts) => {
     const newBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
     assert.equal(newBalance, origBalance + value, "target account balance should have increased")
+    assert.equal("0x0000000000000000000000000000000000000000", await instance.getMediator(accounts[0], accounts[1], value))
   })
   it("disallows false mediators", async () => {
     const value = 200
@@ -113,6 +116,8 @@ contract('Escrow', (accounts) => {
     await instance.rollbackAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
     const newBalance = web3.eth.getBalance(accounts[0]).toNumber()
     assert.equal(newBalance, originalBalance - gasCost, "original account balance minus gas costs should be returned")
+
+    assert.equal("0x0000000000000000000000000000000000000000", await instance.getMediator(accounts[0], accounts[1], value))
   })
   it("can be halted and unhalted", async () => {
     const instance = await Escrow.new()

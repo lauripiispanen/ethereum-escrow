@@ -52,6 +52,11 @@ contract Escrow {
     return d.amount == _amount && d.sender == _sender && d.recipient == _recipient;
   }
 
+  function getMediator(address _sender, address _recipient, uint _amount) public view returns (address) {
+    var id = keccak256(_sender, _recipient, _amount);
+    return mediators[id];
+  }
+
   function commit(address _recipient, uint _amount) public {
     var id = keccak256(msg.sender, _recipient, _amount);
     performCommit(id);
@@ -63,6 +68,7 @@ contract Escrow {
     var recipient = deposits[_id].recipient;
     var amount = deposits[_id].amount;
     delete deposits[_id];
+    delete mediators[_id];
 
     // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
     assert(deposits[_id].amount == 0);
@@ -92,6 +98,7 @@ contract Escrow {
     var recipient = deposits[_id].sender;
     var amount = deposits[_id].amount;
     delete deposits[_id];
+    delete mediators[_id];
 
     // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
     assert(deposits[_id].amount == 0);
