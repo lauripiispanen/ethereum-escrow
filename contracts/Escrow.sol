@@ -6,12 +6,14 @@ contract Escrow {
     uint    amount;
     address sender;
     address recipient;
+    address mediator;
   }
 
   address public owner;
   bool public halted;
 
   mapping (bytes32 => Deposit) public deposits;
+  mapping (bytes32 => address) public mediators;
 
   function Escrow() public {
     owner = msg.sender;
@@ -28,7 +30,7 @@ contract Escrow {
     halted = false;
   }
 
-  function deposit(address _recipient) public payable {
+  function deposit(address _recipient, address _mediator) public payable {
     require(!halted);
     require(msg.value > 0);
 
@@ -37,8 +39,11 @@ contract Escrow {
     require(d.amount == 0);
 
     d.recipient = _recipient;
+    d.mediator = _mediator;
     d.amount = msg.value;
     d.sender = msg.sender;
+
+    mediators[id] = _mediator;
   }
 
   function hasDeposit(address _sender, address _recipient, uint _amount) public view returns (bool) {
@@ -49,15 +54,25 @@ contract Escrow {
 
   function commit(address _recipient, uint _amount) public {
     var id = keccak256(msg.sender, _recipient, _amount);
-    require(deposits[id].amount > 0);
+    performCommit(id);
+  }
 
-    var recipient = deposits[id].recipient;
-    var amount = deposits[id].amount;
-    delete deposits[id];
+  function performCommit(bytes32 _id) private {
+    require(deposits[_id].amount > 0);
+
+    var recipient = deposits[_id].recipient;
+    var amount = deposits[_id].amount;
+    delete deposits[_id];
 
     // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
-    assert(deposits[id].amount == 0);
+    assert(deposits[_id].amount == 0);
     recipient.transfer(amount);
+  }
+
+  function commitAsMediator(address _sender, address _recipient, uint _amount) public {
+    var id = keccak256(_sender, _recipient, _amount);
+    require(mediators[id] == msg.sender);
+    performCommit(id);
   }
 
   function rollback(address _depositSender, uint _amount) public {

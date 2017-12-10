@@ -7,7 +7,7 @@ contract('Escrow', (accounts) => {
   })
   it("allows deposits", async () => {
     const instance = await Escrow.new()
-    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 100 })
 
     assert.ok(await instance.hasDeposit(accounts[0], accounts[1], 100), "deposit not found")
     assert.ok(!(await instance.hasDeposit(accounts[0], accounts[2], 100)), "deposit should not exist")
@@ -15,7 +15,7 @@ contract('Escrow', (accounts) => {
   it("allows commits", async () => {
     const value = 200
     const instance = await Escrow.new()
-    await instance.deposit(accounts[1], { from: accounts[0], value })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value })
     const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
 
     await instance.commit(accounts[1], value, { from: accounts[0] })
@@ -23,14 +23,35 @@ contract('Escrow', (accounts) => {
 
     assert.equal(newBalance, origBalance + value, "target account balance should have increased")
   })
+  it("allows commits by mediator", async () => {
+    const value = 200
+    const instance = await Escrow.new()
+    await instance.deposit(accounts[1], accounts[2], { from: accounts[0], value })
+    const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
+
+    await instance.commitAsMediator(accounts[0], accounts[1], value, { from: accounts[2] })
+    const newBalance = web3.eth.getBalance(accounts[1]).toNumber()
+
+    assert.equal(newBalance, origBalance + value, "target account balance should have increased")
+  })
+  it("disallows false mediators", async () => {
+    const value = 200
+    const instance = await Escrow.new()
+    await instance.deposit(accounts[1], accounts[2], { from: accounts[0], value })
+    const origBalance = web3.eth.getBalance(accounts[1]).toNumber()
+
+    await assertThrowsAsync(async () => {
+      await instance.commitAsMediator(accounts[0], accounts[1], value, { from: accounts[3] })
+    }, /revert/)
+  })
   it("prevents double-committing", async () => {
     const value = 200
     const instance = await Escrow.new()
-    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value })
-    await instance.deposit.sendTransaction(accounts[2], { from: accounts[0], value })
-    await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value })
+    await instance.deposit(accounts[2], accounts[3], { from: accounts[0], value })
+    await instance.commit(accounts[1], value, { from: accounts[0] })
     await assertThrowsAsync(async () => {
-        await instance.commit.sendTransaction(accounts[1], value, { from: accounts[0] })
+        await instance.commit(accounts[1], value, { from: accounts[0] })
     }, /revert/)
   })
   it("cannot deposit zero", async () => {
@@ -41,23 +62,22 @@ contract('Escrow', (accounts) => {
     }, /revert/)
     */
     await assertThrowsAsync(async () => {
-      await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 0 })
+      await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 0 })
     }, /revert/)
   })
   it("cannot deposit twice to prevent losing ether", async () => {
     const instance = await Escrow.new()
-    await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 100 })
     await assertThrowsAsync(async () => {
-      await instance.deposit.sendTransaction(accounts[1], { from: accounts[0], value: 100 })
+      await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 100 })
     }, /revert/)
   })
-
   it("can be rollbacked by recipient", async () => {
     const value = 10000
     const gasPrice = 10
     const instance = await Escrow.new()
     const originalBalance = web3.eth.getBalance(accounts[0]).toNumber()
-    const { tx, receipt } = await instance.deposit(accounts[1], { from: accounts[0], value, gasPrice })
+    const { tx, receipt } = await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value, gasPrice })
     const gasCost = receipt.gasUsed * gasPrice
 
     await instance.rollback(accounts[0], value, { from: accounts[1] })
@@ -67,8 +87,8 @@ contract('Escrow', (accounts) => {
   it("cannot be rollbacked twice", async () => {
     const instance = await Escrow.new()
     const value = 12345
-    await instance.deposit(accounts[1], { from: accounts[0], value })
-    await instance.deposit(accounts[2], { from: accounts[0], value })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value })
+    await instance.deposit(accounts[2], accounts[3], { from: accounts[0], value })
 
     await instance.rollback(accounts[0], value, { from: accounts[1] })
     const balance = web3.eth.getBalance(accounts[0]).toNumber()
@@ -83,10 +103,10 @@ contract('Escrow', (accounts) => {
     const instance = await Escrow.new()
     await instance.halt({ from: accounts[0] })
     await assertThrowsAsync(async () => {
-      await instance.deposit(accounts[1], { from: accounts[0], value: 1000 })
+      await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 1000 })
     }, /revert/)
     await instance.unhalt({ from: accounts[0] })
-    await instance.deposit(accounts[1], { from: accounts[0], value: 1000 })
+    await instance.deposit(accounts[1], accounts[3], { from: accounts[0], value: 1000 })
     assert.ok(await instance.hasDeposit(accounts[0], accounts[1], 1000), "deposit not found")
   })
   it("can only be halted or unhalted by owner", async () => {
