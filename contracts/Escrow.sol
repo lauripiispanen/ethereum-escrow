@@ -23,6 +23,11 @@ contract Escrow {
     halted = true;
   }
 
+  function unhalt() public {
+    require(msg.sender == owner);
+    halted = false;
+  }
+
   function deposit(address _recipient) public payable {
     require(!halted);
     require(msg.value > 0);

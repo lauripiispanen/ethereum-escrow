@@ -79,17 +79,23 @@ contract('Escrow', (accounts) => {
 
     assert.equal(balance, web3.eth.getBalance(accounts[0]).toNumber(), "account balance should be unchanged")
   })
-  it("can be halted", async () => {
+  it("can be halted and unhalted", async () => {
     const instance = await Escrow.new()
     await instance.halt({ from: accounts[0] })
     await assertThrowsAsync(async () => {
       await instance.deposit(accounts[1], { from: accounts[0], value: 1000 })
     }, /revert/)
+    await instance.unhalt({ from: accounts[0] })
+    await instance.deposit(accounts[1], { from: accounts[0], value: 1000 })
+    assert.ok(await instance.hasDeposit(accounts[0], accounts[1], 1000), "deposit not found")
   })
-  it("can only be halted by owner", async () => {
+  it("can only be halted or unhalted by owner", async () => {
     const instance = await Escrow.new()
     await assertThrowsAsync(async () => {
       await instance.halt({ from: accounts[1] })
+    }, /revert/)
+    await assertThrowsAsync(async () => {
+      await instance.unhalt({ from: accounts[1] })
     }, /revert/)
   })
   it("prevents ether from being sent directly (fallback)", async () => {
