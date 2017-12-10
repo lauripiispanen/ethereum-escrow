@@ -49,8 +49,13 @@ contract Escrow {
     if (deposits[id].amount <= 0) {
       revert();
     }
-    deposits[id].recipient.transfer(deposits[id].amount);
+    var recipient = deposits[id].recipient;
+    var amount = deposits[id].amount;
     delete deposits[id];
+
+    // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
+    assert(deposits[id].amount == 0);
+    recipient.transfer(amount);
   }
 
   function rollback(address _depositSender, uint _amount) public {
@@ -58,8 +63,13 @@ contract Escrow {
     if (deposits[id].amount <= 0) {
       revert();
     }
-    deposits[id].sender.transfer(deposits[id].amount);
+    var recipient = deposits[id].sender;
+    var amount = deposits[id].amount;
     delete deposits[id];
+
+    // TRANSFERS MUST ALWAYS OCCUR AFTER STATE CHANGES TO PREVENT REENTRANCY
+    assert(deposits[id].amount == 0);
+    recipient.transfer(amount);
   }
 
 }
