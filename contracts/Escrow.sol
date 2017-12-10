@@ -6,7 +6,6 @@ contract Escrow {
     uint    amount;
     address sender;
     address recipient;
-    address mediator;
   }
 
   address public owner;
@@ -39,7 +38,6 @@ contract Escrow {
     require(d.amount == 0);
 
     d.recipient = _recipient;
-    d.mediator = _mediator;
     d.amount = msg.value;
     d.sender = msg.sender;
 
