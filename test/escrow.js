@@ -92,6 +92,13 @@ contract('Escrow', (accounts) => {
       await instance.halt({ from: accounts[1] })
     }, /revert/)
   })
+  it("prevents ether from being sent directly (fallback)", async () => {
+    // This behavior is default since Solidity v0.4.0, but we will prove it anyway
+    const instance = await Escrow.new()
+    await assertThrowsAsync(async () => {
+      await instance.send(web3.toWei(1, "ether"))
+    }, /revert/)
+  })
 })
 
 async function assertThrowsAsync(fn, regExp) {
