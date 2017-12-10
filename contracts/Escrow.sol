@@ -9,9 +9,9 @@ contract Escrow {
   }
 
   address public owner;
-  bool halted;
+  bool public halted;
 
-  mapping (bytes32 => Deposit) deposits;
+  mapping (bytes32 => Deposit) public deposits;
 
   function Escrow() public {
     owner = msg.sender;
